@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@100..900&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #101828;
+  --foreground: #fff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  font-family: "Noto Sans Hebrew", sans-serif;
+}
