@@ -8,6 +8,8 @@ export async function GET(): Promise<NextResponse<ApiResponse<Partial<Record<str
             headers: {
                 'Accept': 'application/json, text/plain, */*',
                 'User-Agent': 'Mozilla/5.0 (compatible; NextJS-App)',
+                'referer': 'https://www.oref.org.il/',
+                'X-Requested-With': 'XMLHttpRequest'
             }
         });
 
