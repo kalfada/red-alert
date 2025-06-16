@@ -4,6 +4,7 @@ import { ApiResponse, History } from "./types/types";
 import { useUpdateTime } from "./context/UpdateTimeContext";
 import CityAlerts from "./components/CityAlerts";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+import Link from "next/link";
 
 export default function Home() {
   const [userLocation] = useLocalStorage<string>('userLocation', '');
@@ -23,6 +24,9 @@ export default function Home() {
 
   useEffect(() => {
     const interval = setInterval(() => {
+      if (!userLocation) {
+        return;
+      }
       fetchAlerts()
         .then(result => {
 
@@ -35,11 +39,18 @@ export default function Home() {
     }, 700)
 
     return () => clearInterval(interval);
-  }, [setLastUpdateTime]);
+  }, [setLastUpdateTime, userLocation]);
+
+  if (!userLocation) {
+    return <div className="flex flex-col items-center justify-center h-[90vh] gap-4">
+      <div className="text-4xl font-bold">נא לבחור מיקום</div>
+      <div className="text-lg">לבחירת מיקום <Link href='/settings' className="underline">לחץ כאן</Link></div>
+    </div>;
+  }
 
   if (!history) {
     return <div className="flex flex-col items-center justify-center h-[90vh] gap-4">
-      <div className="text-4xl font-bold">אין התרעות</div>
+      <div className="text-4xl font-bold">טוען...</div>
     </div>;
   }
 
