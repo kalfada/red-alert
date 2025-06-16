@@ -91,7 +91,12 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
 
     let valueToReturn: T;
     try {
-        valueToReturn = store ? JSON.parse(store) : initialValue;
+        // Always return initialValue on server/first render to prevent hydration mismatch
+        if (typeof window === 'undefined') {
+            valueToReturn = initialValue;
+        } else {
+            valueToReturn = store ? JSON.parse(store) : initialValue;
+        }
     } catch (e) {
         console.warn('Error parsing stored value:', e);
         valueToReturn = initialValue;
