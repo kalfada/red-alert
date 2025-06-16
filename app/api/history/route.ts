@@ -4,14 +4,14 @@ import type { ApiResponse, History } from '../../types/types';
 
 export async function GET(): Promise<NextResponse<ApiResponse<Partial<Record<string, History[]>>>>> {
     try {
-        const response = await fetch('https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json', {
+        const response = await fetch("https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json", {
+            method: "GET",
             headers: {
-                'Accept': 'application/json, text/plain, */*',
-                'User-Agent': 'Mozilla/5.0 (compatible; NextJS-App)',
-                'referer': 'https://www.oref.org.il/',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
+                "accept": "application/json, text/plain, */*",
+                "Referer": "https://www.oref.org.il/heb/alerts-history",
+                "Referrer-Policy": "strict-origin-when-cross-origin"
+            },
+        });;
 
         if (!response.ok) {
             return NextResponse.json<ApiResponse<Partial<Record<string, History[]>>>>(
