@@ -55,8 +55,8 @@ export default function Home() {
   }
 
   return (
-    <div className="flex items-center justify-center">
-      <div className="flex flex-wrap gap-4 justify-start p-4">
+    <div className="mx-auto flex items-center justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
         <CityAlerts
           city={userLocation}
           alerts={history[userLocation] || []}
