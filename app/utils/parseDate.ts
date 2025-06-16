@@ -3,7 +3,8 @@ const parseDate = (dateString: string, sec = false): string => {
 
     // Check if the date is valid
     if (isNaN(date.getTime())) {
-        throw new Error(`Invalid date string provided: ${dateString}`);
+        return dateString; // Return the original string if invalid
+        // throw new Error(`Invalid date string provided: ${dateString}`);
     }
 
     const month = String(date.getMonth() + 1).padStart(2, '0');
