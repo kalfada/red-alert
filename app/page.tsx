@@ -54,9 +54,17 @@ export default function Home() {
     </div>;
   }
 
+  const totalComponents = 1 + locationsOfInterest.length;
+
   return (
     <div className="mx-auto flex items-center justify-center">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+      <div className={`grid gap-4 p-4 ${
+        totalComponents === 1 
+          ? 'grid-cols-1 place-items-center'
+          : totalComponents === 2
+          ? 'grid-cols-1 md:grid-cols-2 place-items-center'
+          : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+      }`}>
         <CityAlerts
           city={userLocation}
           alerts={history[userLocation] || []}
