@@ -8,8 +8,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<Partial<Record<str
             method: "GET",
             headers: {
                 "accept": "application/json, text/plain, */*",
-                "Referer": "http://localhost:5173/",
-                // "Referer": "https://www.oref.org.il/heb/alerts-history",
+                "Referer": "https://www.oref.org.il/heb/alerts-history",
                 "Referrer-Policy": "strict-origin-when-cross-origin"
             },
         });;
