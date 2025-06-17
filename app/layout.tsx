@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Header from "./components/Header";
 import "./globals.css";
 import { UpdateTimeProvider } from './context/UpdateTimeContext';
@@ -8,8 +8,6 @@ export const metadata: Metadata = {
   title: "התרעות אמת",
   description: "התרעות אמת - Red Alert Notifications",
   manifest: "/manifest.json",
-  themeColor: "#ef4444",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -26,6 +24,15 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-status-bar-style": "default",
     "apple-mobile-web-app-title": "התרעות אמת",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#ef4444",
 };
 
 export default function RootLayout({

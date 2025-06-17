@@ -1,13 +1,15 @@
 'use client'
 import { useEffect, useState } from "react";
-import { ApiResponse, History } from "./types/types";
+import { ApiResponse, History, RealTimeAlert } from "./types/types";
 import { useUpdateTime } from "./context/UpdateTimeContext";
 import CityAlerts from "./components/CityAlerts";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import Link from "next/link";
+import { ToastContainer, Slide, toast } from "react-toastify";
 
 export default function Home() {
   const [userLocation] = useLocalStorage<string>('userLocation', '');
+  const [realtimeId, setRealtimeId] = useLocalStorage<string>('realtimeId', '');
   const [locationsOfInterest] = useLocalStorage<string[]>('locationsOfInterest', []);
   const [history, setHistory] = useState<Partial<Record<string, History[]>> | null>(null);
   const { setLastUpdateTime } = useUpdateTime()
@@ -21,6 +23,51 @@ export default function Home() {
 
     return response.json();
   };
+
+  const fetchRealTimeAlerts = async (): Promise<ApiResponse<RealTimeAlert>> => {
+    const response = await fetch('/api/realtime');
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch alerts');
+    }
+
+    return response.json();
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!userLocation) {
+        return;
+      }
+      fetchRealTimeAlerts()
+        .then(result => {
+          if (!result.success || !result?.data?.id) return
+          const { id } = result.data;
+          if (realtimeId !== id) {
+            setRealtimeId(id);
+            const relevantAlerts = result.data.data.filter(city => city === userLocation || locationsOfInterest.includes(city));
+
+            if (!relevantAlerts.length) return;
+            const { title } = result.data
+            for (const city of relevantAlerts) {
+              toast.error(`${city} - ${title}`, {
+                position: "top-right",
+                autoClose: 120000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: false,
+                progress: undefined,
+                theme: "dark",
+                transition: Slide,
+              });
+            }
+          }
+        })
+        .catch(console.error);
+    }, 700)
+    return () => clearInterval(interval);
+  }, [userLocation, realtimeId, setRealtimeId, locationsOfInterest]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -36,7 +83,7 @@ export default function Home() {
           }
         })
         .catch(console.error);
-    }, 700)
+    }, 2000)
 
     return () => clearInterval(interval);
   }, [setLastUpdateTime, userLocation]);
@@ -58,13 +105,12 @@ export default function Home() {
 
   return (
     <div className="mx-auto flex items-center justify-center">
-      <div className={`grid gap-4 p-4 ${
-        totalComponents === 1 
-          ? 'grid-cols-1 place-items-center'
-          : totalComponents === 2
+      <div className={`grid gap-4 p-4 ${totalComponents === 1
+        ? 'grid-cols-1 place-items-center'
+        : totalComponents === 2
           ? 'grid-cols-1 md:grid-cols-2 place-items-center'
           : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-      }`}>
+        }`}>
         <CityAlerts
           city={userLocation}
           alerts={history[userLocation] || []}
@@ -77,6 +123,19 @@ export default function Home() {
           />
         ))}
       </div>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={30000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl
+        pauseOnFocusLoss
+        draggable={false}
+        pauseOnHover
+        theme="dark"
+        transition={Slide}
+      />
     </div>
   );
 }

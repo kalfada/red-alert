@@ -1,8 +1,8 @@
 // app/api/history/route.ts
 import { NextResponse } from 'next/server';
-import type { ApiResponse, History } from '../../types/types';
+import type { ApiResponse, RealTimeAlert } from '../../types/types';
 
-export async function GET(): Promise<NextResponse<ApiResponse<Partial<Record<string, History[]>>>>> {
+export async function GET(): Promise<NextResponse<ApiResponse<RealTimeAlert>>> {
     try {
         const response = await fetch('https://www.oref.org.il/warningMessages/alert/Alerts.json', {
             headers: {
@@ -12,25 +12,39 @@ export async function GET(): Promise<NextResponse<ApiResponse<Partial<Record<str
         });
 
         if (!response.ok) {
-            return NextResponse.json<ApiResponse<Partial<Record<string, History[]>>>>(
+            return NextResponse.json<ApiResponse<RealTimeAlert>>(
                 { success: false, error: `HTTP error! status: ${response.status}` },
                 { status: response.status }
             );
         }
 
-        const data: History[] = await response.json();
-        console.log('Fetched alerts:', data);
-        data.sort((a, b) => new Date(b.alertDate).getTime() - new Date(a.alertDate).getTime());
-        const grouped = Object.groupBy(data, alert => alert.data);
+        let data: RealTimeAlert | null = null
 
-        return NextResponse.json<ApiResponse<Partial<Record<string, History[]>>>>({
+        try {
+            data = await response.json();
+
+        } catch {
+            return NextResponse.json<ApiResponse<RealTimeAlert>>(
+                { success: true },
+                { status: 200 }
+            );
+        }
+
+        if (!data) {
+            return NextResponse.json<ApiResponse<RealTimeAlert>>(
+                { success: true },
+                { status: 200 }
+            );
+        }
+
+        return NextResponse.json<ApiResponse<RealTimeAlert>>({
             success: true,
-            data: grouped
+            data
         });
 
     } catch (error) {
         console.error('Error fetching alerts:', error);
-        return NextResponse.json<ApiResponse<Partial<Record<string, History[]>>>>(
+        return NextResponse.json<ApiResponse<RealTimeAlert>>(
             { success: false, error: 'Failed to fetch alerts' },
             { status: 500 }
         );
