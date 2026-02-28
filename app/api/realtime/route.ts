@@ -1,4 +1,3 @@
-// app/api/history/route.ts
 import { NextResponse } from 'next/server';
 import type { ApiResponse, RealTimeAlert } from '../../types/types';
 

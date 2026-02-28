@@ -14,7 +14,7 @@ export interface RealTimeAlert {
 }
 
 export interface HistoryResponse {
-    alerts?: Alert[];
+    alerts?: History[];
     // Add other root properties if they exist
 }
 

@@ -1,0 +1,7 @@
+services:
+  red-alert:
+    build: .
+    container_name: red-alert
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
