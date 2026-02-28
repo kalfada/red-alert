@@ -22,7 +22,11 @@ export async function GET(): Promise<NextResponse<ApiResponse<Partial<Record<str
 
         const data: History[] = await response.json();
         data.sort((a, b) => new Date(b.alertDate).getTime() - new Date(a.alertDate).getTime());
-        const grouped = Object.groupBy(data, alert => alert.data);
+        const grouped = data.reduce<Record<string, History[]>>((acc, alert) => {
+            const key = alert.data;
+            (acc[key] ??= []).push(alert);
+            return acc;
+        }, {});
 
         return NextResponse.json<ApiResponse<Partial<Record<string, History[]>>>>({
             success: true,
