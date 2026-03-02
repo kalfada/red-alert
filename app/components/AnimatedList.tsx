@@ -41,7 +41,7 @@ const AnimatedItem: React.FC<AnimatedItemProps> = ({
             initial={{ scale: 0.7, opacity: 0 }}
             animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
             transition={{ duration: 0.2, delay }}
-            className="mb-4 cursor-pointer"
+            className="mb-2 cursor-pointer"
         >
             {children}
         </motion.div>
@@ -179,10 +179,10 @@ const AnimatedList: React.FC<AnimatedListProps> = ({
     }, [selectedIndex, keyboardNav]);
 
     return (
-        <div className={`relative w-[500px] ${className}`}>
+        <div className={`relative w-full ${className}`}>
             <div
                 ref={listRef}
-                className={`max-h-[400px] overflow-y-auto p-4 ${displayScrollbar
+                className={`max-h-[400px] overflow-y-auto p-1 ${displayScrollbar
                     ? "[&::-webkit-scrollbar]:w-[8px] [&::-webkit-scrollbar-track]:bg-[#060010] [&::-webkit-scrollbar-thumb]:bg-[#222] [&::-webkit-scrollbar-thumb]:rounded-[4px]"
                     : "scrollbar-hide"
                     }`}
@@ -210,7 +210,7 @@ const AnimatedList: React.FC<AnimatedListProps> = ({
                             }}
                         >
                             <div
-                                className={`p-4 rounded-lg transition-all duration-200 ${itemClassName}`}
+                                className={`px-3 py-2 rounded-lg transition-all duration-200 text-sm ${itemClassName}`}
                                 style={{
                                     backgroundColor: isSelected ? itemData.selectedColor : itemData.color,
                                     color: itemData.textColor,

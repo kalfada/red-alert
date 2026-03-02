@@ -26,15 +26,15 @@ interface Props {
 
 const CityAlerts = ({ city, alerts, isPrimary = false }: Props) => {
     return (
-        <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4 w-full">
+        <div className="flex flex-col gap-1 rounded-xl border border-white/10 bg-white/5 p-2 sm:p-3 sm:gap-2 w-full">
             <div className="flex items-center gap-2">
-                <MapPin className={`h-5 w-5 shrink-0 ${isPrimary ? 'text-red-400' : 'text-blue-400'}`} />
-                <h2 className="text-xl font-bold truncate">{city}</h2>
+                <MapPin className={`h-4 w-4 shrink-0 ${isPrimary ? 'text-red-400' : 'text-blue-400'}`} />
+                <h2 className="text-base font-bold truncate">{city}</h2>
                 {isPrimary && (
-                    <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full mr-auto whitespace-nowrap">ראשי</span>
+                    <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full whitespace-nowrap">ראשי</span>
                 )}
             </div>
-            <div className="flex flex-col gap-2 overflow-y-auto max-h-[400px]">
+            <div className="flex flex-col gap-1 overflow-y-auto max-h-[150px] sm:max-h-[280px] scrollbar-hide">
                 {alerts.length ? (
                     <AnimatedList
                         className="w-full"
