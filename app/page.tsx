@@ -122,7 +122,7 @@ export default function Home() {
   const totalComponents = 1 + locationsOfInterest.length;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 min-h-[calc(100vh-60px)] flex items-center justify-center">
+    <div className="w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 sm:min-h-[calc(100vh-60px)] sm:flex sm:items-center sm:justify-center">
       <div className={`grid gap-3 w-full ${totalComponents === 1
         ? 'grid-cols-1 max-w-lg mx-auto'
         : totalComponents === 2

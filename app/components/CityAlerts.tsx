@@ -34,7 +34,7 @@ const CityAlerts = ({ city, alerts, isPrimary = false }: Props) => {
                     <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full whitespace-nowrap">ראשי</span>
                 )}
             </div>
-            <div className="flex flex-col gap-1 overflow-y-auto max-h-[150px] sm:max-h-[280px] scrollbar-hide">
+            <div className="flex flex-col gap-1 overflow-y-auto max-h-[150px] sm:max-h-[350px] scrollbar-hide">
                 {alerts.length ? (
                     <AnimatedList
                         className="w-full"

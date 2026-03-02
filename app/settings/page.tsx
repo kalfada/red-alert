@@ -17,7 +17,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, MapPin, Map } from "lucide-react";
+import { Check, ChevronsUpDown, MapPin, Map, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Settings = () => {
@@ -103,6 +103,17 @@ const Settings = () => {
                         }
                     />
                 </div>
+
+                <button
+                    onClick={() => {
+                        localStorage.clear();
+                        window.location.reload();
+                    }}
+                    className="flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-red-400 transition-colors py-2 cursor-pointer"
+                >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    איפוס הגדרות
+                </button>
             </div>
         </div>
     )
