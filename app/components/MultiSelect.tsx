@@ -244,7 +244,7 @@ export const MultiSelect = React.forwardRef<
                                             )}
                                             style={{ animationDuration: `${animation}s` }}
                                         >
-                                            {`+ ${selectedValues.length - maxCount} more`}
+                                            {`+ ${selectedValues.length - maxCount} נוספים`}
                                             <XCircle
                                                 className="ml-2 h-4 w-4 cursor-pointer"
                                                 onClick={(event) => {
@@ -281,17 +281,18 @@ export const MultiSelect = React.forwardRef<
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent
-                    className="w-auto p-0"
+                    className="w-auto p-0 bg-[var(--background)]"
                     align="start"
+                    dir="rtl"
                     onEscapeKeyDown={() => setIsPopoverOpen(false)}
                 >
                     <Command>
                         <CommandInput
-                            placeholder="Search..."
+                            placeholder="חפש..."
                             onKeyDown={handleInputKeyDown}
                         />
                         <CommandList>
-                            <CommandEmpty>No results found.</CommandEmpty>
+                            <CommandEmpty>לא נמצאו תוצאות.</CommandEmpty>
                             <CommandGroup>
                                 <CommandItem
                                     key="all"
@@ -308,7 +309,7 @@ export const MultiSelect = React.forwardRef<
                                     >
                                         <CheckIcon className="h-4 w-4" />
                                     </div>
-                                    <span>(Select All)</span>
+                                    <span>(בחר הכל)</span>
                                 </CommandItem>
                                 {options.map((option) => {
                                     const isSelected = selectedValues.includes(option.value);
@@ -345,7 +346,7 @@ export const MultiSelect = React.forwardRef<
                                                 onSelect={handleClear}
                                                 className="flex-1 justify-center cursor-pointer"
                                             >
-                                                Clear
+                                                נקה
                                             </CommandItem>
                                             <Separator
                                                 orientation="vertical"
@@ -357,7 +358,7 @@ export const MultiSelect = React.forwardRef<
                                         onSelect={() => setIsPopoverOpen(false)}
                                         className="flex-1 justify-center cursor-pointer max-w-full"
                                     >
-                                        Close
+                                        סגור
                                     </CommandItem>
                                 </div>
                             </CommandGroup>

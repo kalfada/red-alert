@@ -6,6 +6,7 @@ import CityAlerts from "./components/CityAlerts";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import Link from "next/link";
 import { ToastContainer, Slide, toast } from "react-toastify";
+import { Settings, MapPin, Loader2 } from "lucide-react";
 
 export default function Home() {
   const [userLocation] = useLocalStorage<string>('userLocation', '');
@@ -91,31 +92,47 @@ export default function Home() {
   }, [setLastUpdateTime, userLocation, fetchAlerts]);
 
   if (!userLocation) {
-    return <div className="flex flex-col items-center justify-center h-[90vh] gap-4">
-      <div className="text-4xl font-bold">נא לבחור מיקום</div>
-      <div className="text-lg">לבחירת מיקום <Link href='/settings' className="underline">לחץ כאן</Link></div>
-    </div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-[85vh] gap-5 px-4 text-center">
+        <div className="rounded-full bg-white/5 p-6">
+          <MapPin className="h-12 w-12 text-red-400" />
+        </div>
+        <h1 className="text-3xl font-bold">נא לבחור מיקום</h1>
+        <p className="text-gray-400 max-w-xs">בחר את עיר המגורים שלך כדי להתחיל לקבל התרעות</p>
+        <Link
+          href="/settings"
+          className="flex items-center gap-2 bg-white/10 hover:bg-white/15 transition-colors px-5 py-2.5 rounded-lg text-sm font-medium"
+        >
+          <Settings className="h-4 w-4" />
+          עבור להגדרות
+        </Link>
+      </div>
+    );
   }
 
   if (!history) {
-    return <div className="flex flex-col items-center justify-center h-[90vh] gap-4">
-      <div className="text-4xl font-bold">טוען...</div>
-    </div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-[85vh] gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
+        <span className="text-lg text-gray-400">טוען התרעות...</span>
+      </div>
+    );
   }
 
   const totalComponents = 1 + locationsOfInterest.length;
 
   return (
-    <div className="mx-auto flex items-center justify-center">
-      <div className={`grid gap-4 p-4 ${totalComponents === 1
-        ? 'grid-cols-1 place-items-center'
+    <div className="w-full max-w-6xl mx-auto px-4 py-6">
+      <div className={`grid gap-4 ${totalComponents === 1
+        ? 'grid-cols-1 max-w-lg mx-auto'
         : totalComponents === 2
-          ? 'grid-cols-1 md:grid-cols-2 place-items-center'
+          ? 'grid-cols-1 md:grid-cols-2'
           : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
         }`}>
         <CityAlerts
           city={userLocation}
           alerts={history[userLocation] || []}
+          isPrimary
         />
         {locationsOfInterest.map((location, index) => (
           <CityAlerts
