@@ -13,7 +13,7 @@ const Header = () => {
                 התרעות אמת
             </Link>
             {lastUpdateTime && (
-                <div className="text-[11px] text-gray-500 hidden sm:block">
+                <div className="text-sm text-gray-300 hidden sm:block">
                     {`עדכון אחרון - ${parseDate(lastUpdateTime, true)}`}
                 </div>
             )}
