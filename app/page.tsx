@@ -13,7 +13,7 @@ export default function Home() {
   const [locationsOfInterest] = useLocalStorage<string[]>('locationsOfInterest', []);
   const [history, setHistory] = useState<Partial<Record<string, History[]>> | null>(null);
   const { setLastUpdateTime } = useUpdateTime()
-  const lastRealtimeId = useRef('');
+  const shownAlertIds = useRef(new Set<string>());
 
   const fetchAlerts = useCallback(async (): Promise<ApiResponse<Partial<Record<string, History[]>>>> => {
     const cities = [userLocation, ...locationsOfInterest].filter(Boolean);
@@ -27,15 +27,17 @@ export default function Home() {
     return response.json();
   }, [userLocation, locationsOfInterest]);
 
-  const fetchRealTimeAlerts = async (): Promise<ApiResponse<RealTimeAlert>> => {
-    const response = await fetch('/api/realtime');
+  const fetchRealTimeAlerts = useCallback(async (): Promise<ApiResponse<RealTimeAlert>> => {
+    const cities = [userLocation, ...locationsOfInterest].filter(Boolean);
+    const params = cities.map((city, i) => `city_${i}=${encodeURIComponent(city)}`).join('&');
+    const response = await fetch(`/api/realtime?${params}`);
 
     if (!response.ok) {
       throw new Error('Failed to fetch alerts');
     }
 
     return response.json();
-  }
+  }, [userLocation, locationsOfInterest]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,32 +47,28 @@ export default function Home() {
       fetchRealTimeAlerts()
         .then(result => {
           if (!result.success || !result?.data?.id) return
-          const { id } = result.data;
-          if (lastRealtimeId.current !== id) {
-            lastRealtimeId.current = id;
-            const relevantAlerts = result.data.data.filter(city => city === userLocation || locationsOfInterest.includes(city));
-
-            if (!relevantAlerts.length) return;
-            const { title } = result.data
-            for (const city of relevantAlerts) {
-              toast.error(`${city} - ${title}`, {
-                position: "top-right",
-                autoClose: 120000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: false,
-                progress: undefined,
-                theme: "dark",
-                transition: Slide,
-              });
-            }
+          const { id, title } = result.data;
+          if (shownAlertIds.current.has(id)) return;
+          shownAlertIds.current.add(id);
+          if (!result.data.data.length) return;
+          for (const city of result.data.data) {
+            toast.error(`${city} - ${title}`, {
+              toastId: `${id}-${city}`,
+              position: "top-right",
+              autoClose: 120000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: false,
+              theme: "dark",
+              transition: Slide,
+            });
           }
         })
         .catch(console.error);
     }, 700)
     return () => clearInterval(interval);
-  }, [userLocation, locationsOfInterest]);
+  }, [userLocation, locationsOfInterest, fetchRealTimeAlerts]);
 
   useEffect(() => {
     const interval = setInterval(() => {
