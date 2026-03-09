@@ -13,7 +13,7 @@ export default function Home() {
   const [locationsOfInterest] = useLocalStorage<string[]>('locationsOfInterest', []);
   const [history, setHistory] = useState<Partial<Record<string, History[]>> | null>(null);
   const { setLastUpdateTime } = useUpdateTime()
-  const shownAlertIds = useRef(new Set<string>());
+  const shownAlerts = useRef(new Map<string, number>());
 
   const fetchAlerts = useCallback(async (): Promise<ApiResponse<Partial<Record<string, History[]>>>> => {
     const cities = [userLocation, ...locationsOfInterest].filter(Boolean);
@@ -47,13 +47,17 @@ export default function Home() {
       fetchRealTimeAlerts()
         .then(result => {
           if (!result.success || !result?.data?.id) return
-          const { id, title } = result.data;
-          if (shownAlertIds.current.has(id)) return;
-          shownAlertIds.current.add(id);
+          const { title } = result.data;
           if (!result.data.data.length) return;
+          const now = Date.now();
+          const COOLDOWN = 2 * 60 * 1000;
           for (const city of result.data.data) {
+            const key = `${city}-${title}`;
+            const lastShown = shownAlerts.current.get(key);
+            if (lastShown && now - lastShown < COOLDOWN) continue;
+            shownAlerts.current.set(key, now);
             toast.error(`${city} - ${title}`, {
-              toastId: `${id}-${city}`,
+              toastId: key,
               position: "top-right",
               autoClose: 120000,
               hideProgressBar: false,
