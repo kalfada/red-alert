@@ -45,9 +45,7 @@ const Settings = () => {
                                 className="w-full justify-between"
                                 dir="rtl"
                             >
-                                {userLocation
-                                    ? cities.find((city) => city === userLocation)
-                                    : "בחר עיר..."}
+                                {userLocation || "בחר עיר..."}
                                 <ChevronsUpDown className="opacity-50" />
                             </Button>
                         </PopoverTrigger>
@@ -114,6 +112,8 @@ const Settings = () => {
                     <RotateCcw className="h-3.5 w-3.5" />
                     איפוס הגדרות
                 </button>
+
+                <p className="text-center text-xs text-gray-500" dir="ltr">v{process.env.APP_VERSION}</p>
             </div>
         </div>
     )

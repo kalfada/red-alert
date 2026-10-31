@@ -1,8 +1,8 @@
-const parseDate = (dateString: string, sec = false): string => {
+const parseDate = (dateString: string | number, sec = false): string => {
     const date = new Date(dateString);
 
     if (isNaN(date.getTime())) {
-        return dateString;
+        return String(dateString);
     }
 
     const dateStr = date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });

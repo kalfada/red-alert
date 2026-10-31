@@ -4,7 +4,7 @@
   "description": "התרעות אמת - Red Alert Notifications",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#101828",
   "theme_color": "#ef4444",
   "orientation": "portrait",
   "icons": [

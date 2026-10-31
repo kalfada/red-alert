@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import Header from "./components/Header";
 import "./globals.css";
 import { UpdateTimeProvider } from './context/UpdateTimeContext';
-import { MantineProvider } from "@mantine/core";
+import { Noto_Sans_Hebrew } from "next/font/google";
+
+const notoSansHebrew = Noto_Sans_Hebrew({ subsets: ["hebrew", "latin"] });
 
 export const metadata: Metadata = {
   title: "התרעות אמת",
@@ -29,8 +31,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#ef4444",
 };
@@ -43,15 +43,11 @@ export default function RootLayout({
 
   return (
     <html lang="he" dir="rtl">
-      <body
-        className={`antialiased`}
-      >
-        <MantineProvider>
-          <UpdateTimeProvider>
-            <Header />
-            {children}
-          </UpdateTimeProvider>
-        </MantineProvider>
+      <body className={`${notoSansHebrew.className} antialiased`}>
+        <UpdateTimeProvider>
+          <Header />
+          {children}
+        </UpdateTimeProvider>
       </body>
     </html>
   );

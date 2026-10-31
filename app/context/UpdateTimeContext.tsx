@@ -3,14 +3,14 @@
 import { createContext, useContext, useState } from 'react';
 
 type UpdateTimeContextType = {
-    lastUpdateTime: string | null;
-    setLastUpdateTime: (time: string) => void;
+    lastUpdateTime: number | null;
+    setLastUpdateTime: (time: number | null) => void;
 };
 
 const UpdateTimeContext = createContext<UpdateTimeContextType | undefined>(undefined);
 
 export function UpdateTimeProvider({ children }: { children: React.ReactNode }) {
-    const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
+    const [lastUpdateTime, setLastUpdateTime] = useState<number | null>(null);
 
     return (
         <UpdateTimeContext.Provider value={{ lastUpdateTime, setLastUpdateTime }}>

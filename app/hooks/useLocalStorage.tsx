@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 // Helper to safely access localStorage
 const getLocalStorageItem = (key: string) => {
@@ -16,6 +16,7 @@ const setLocalStorageItem = (key: string, value: unknown) => {
     if (typeof window === 'undefined') return;
     try {
         localStorage.setItem(key, JSON.stringify(value));
+        window.dispatchEvent(new StorageEvent('storage', { key }));
     } catch (error) {
         console.warn('Unable to write to localStorage:', error);
     }
@@ -26,6 +27,7 @@ const removeLocalStorageItem = (key: string) => {
     if (typeof window === 'undefined') return;
     try {
         localStorage.removeItem(key);
+        window.dispatchEvent(new StorageEvent('storage', { key }));
     } catch (error) {
         console.warn('Unable to remove from localStorage:', error);
     }
@@ -89,18 +91,16 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
         }
     }, [key, initialValue]);
 
-    let valueToReturn: T;
-    try {
-        // Always return initialValue on server/first render to prevent hydration mismatch
-        if (typeof window === 'undefined') {
-            valueToReturn = initialValue;
-        } else {
-            valueToReturn = store ? JSON.parse(store) : initialValue;
+    // Parse only when the raw string changes, so arrays/objects keep a stable reference
+    // across renders (otherwise every effect depending on them re-runs each render).
+    const valueToReturn = useMemo<T>(() => {
+        try {
+            return store ? JSON.parse(store) : initialValueRef.current;
+        } catch (e) {
+            console.warn('Error parsing stored value:', e);
+            return initialValueRef.current;
         }
-    } catch (e) {
-        console.warn('Error parsing stored value:', e);
-        valueToReturn = initialValue;
-    }
+    }, [store]);
 
     return [valueToReturn, setState];
 }

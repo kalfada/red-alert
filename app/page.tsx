@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiResponse, History, RealTimeAlert } from "./types/types";
 import { useUpdateTime } from "./context/UpdateTimeContext";
 import CityAlerts from "./components/CityAlerts";
@@ -8,93 +8,145 @@ import Link from "next/link";
 import { ToastContainer, Slide, toast } from "react-toastify";
 import { Settings, MapPin, Loader2 } from "lucide-react";
 
+const EMPTY: History[] = [];
+const HISTORY_POLL_MS = 10_000;  // realtime goes over SSE; history only needs a slow refresh
+const HISTORY_AFTER_ALERT_MS = 2000; // oref history lags realtime a bit
+const COOLDOWN = 2 * 60 * 1000;  // toast dedupe + how long a card stays "active"
+
+type ActiveAlerts = Record<string, { title: string; until: number }>;
+
 export default function Home() {
   const [userLocation] = useLocalStorage<string>('userLocation', '');
   const [locationsOfInterest] = useLocalStorage<string[]>('locationsOfInterest', []);
   const [history, setHistory] = useState<Partial<Record<string, History[]>> | null>(null);
-  const { setLastUpdateTime } = useUpdateTime()
+  const [active, setActive] = useState<ActiveAlerts>({});
+  const { setLastUpdateTime } = useUpdateTime();
   const shownAlerts = useRef(new Map<string, number>());
+  const refreshHistorySoon = useRef(() => { });
 
-  const fetchAlerts = useCallback(async (): Promise<ApiResponse<Partial<Record<string, History[]>>>> => {
-    const cities = [userLocation, ...locationsOfInterest].filter(Boolean);
-    const params = cities.map((city, i) => `city_${i}=${encodeURIComponent(city)}`).join('&');
-    const response = await fetch(`/api/history?${params}`);
+  const params = [userLocation, ...locationsOfInterest]
+    .filter(Boolean)
+    .map((city, i) => `city_${i}=${encodeURIComponent(city)}`)
+    .join('&');
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch alerts');
-    }
-
-    return response.json();
-  }, [userLocation, locationsOfInterest]);
-
-  const fetchRealTimeAlerts = useCallback(async (): Promise<ApiResponse<RealTimeAlert>> => {
-    const cities = [userLocation, ...locationsOfInterest].filter(Boolean);
-    const params = cities.map((city, i) => `city_${i}=${encodeURIComponent(city)}`).join('&');
-    const response = await fetch(`/api/realtime?${params}`);
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch alerts');
-    }
-
-    return response.json();
-  }, [userLocation, locationsOfInterest]);
-
+  // History: fetch now, then every HISTORY_POLL_MS; never overlapping.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!userLocation) {
-        return;
-      }
-      fetchRealTimeAlerts()
-        .then(result => {
-          if (!result.success || !result?.data?.id) return
-          const { title } = result.data;
-          if (!result.data.data.length) return;
-          const now = Date.now();
-          const COOLDOWN = 2 * 60 * 1000;
-          for (const city of result.data.data) {
-            const key = `${city}-${title}`;
-            const lastShown = shownAlerts.current.get(key);
-            if (lastShown && now - lastShown < COOLDOWN) continue;
-            shownAlerts.current.set(key, now);
-            toast.error(`${city} - ${title}`, {
-              toastId: key,
-              position: "top-right",
-              autoClose: 120000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: false,
-              theme: "dark",
-              transition: Slide,
-            });
-          }
-        })
-        .catch(console.error);
-    }, 700)
-    return () => clearInterval(interval);
-  }, [userLocation, locationsOfInterest, fetchRealTimeAlerts]);
+    if (!userLocation) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    let inFlight = false;
+    let lastText = '';
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!userLocation) {
-        return;
-      }
-      fetchAlerts()
-        .then(result => {
-
+    const load = async () => {
+      clearTimeout(timer);
+      inFlight = true;
+      try {
+        const response = await fetch(`/api/history?${params}`);
+        const text = await response.text();
+        if (response.ok && text !== lastText) {
+          const result: ApiResponse<Partial<Record<string, History[]>>> = JSON.parse(text);
           if (result.success && result.data) {
+            lastText = text;
             setHistory(result.data);
-            setLastUpdateTime(new Date().toLocaleString());
           }
-        })
-        .catch(console.error);
-    }, 2000)
+        }
+      } catch (error) {
+        console.error(error);
+      }
+      inFlight = false;
+      if (!stopped) timer = setTimeout(load, HISTORY_POLL_MS);
+    };
 
-    return () => clearInterval(interval);
-  }, [setLastUpdateTime, userLocation, fetchAlerts]);
+    refreshHistorySoon.current = () => {
+      if (inFlight || stopped) return;
+      clearTimeout(timer);
+      timer = setTimeout(load, HISTORY_AFTER_ALERT_MS);
+    };
 
+    load();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [userLocation, params]);
+
+  // Realtime: server pushes alerts over SSE; EventSource reconnects on its own.
+  useEffect(() => {
+    if (!userLocation) return;
+    // ponytail: start the stale clock now, so a stream that never connects still turns the header red
+    setLastUpdateTime(Date.now());
+    const events = new EventSource(`/api/stream?${params}`);
+
+    events.addEventListener('ping', (e) => {
+      const { lastOk, now } = JSON.parse(e.data);
+      // Age measured on the server's clock, so client/server clock skew doesn't matter.
+      if (lastOk) setLastUpdateTime(Date.now() - (now - lastOk));
+    });
+
+    events.addEventListener('alert', (e) => {
+      const alert: RealTimeAlert = JSON.parse(e.data);
+      const now = Date.now();
+      for (const city of alert.data) {
+        const key = `${city}-${alert.title}`;
+        const lastShown = shownAlerts.current.get(key);
+        if (lastShown && now - lastShown < COOLDOWN) continue;
+        shownAlerts.current.set(key, now);
+        toast.error(`${city} - ${alert.title}`, {
+          toastId: key,
+          position: "top-right",
+          autoClose: 120000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: false,
+          theme: "dark",
+          transition: Slide,
+        });
+      }
+      setActive(prev => {
+        const next = { ...prev };
+        for (const city of alert.data) next[city] = { title: alert.title, until: now + COOLDOWN };
+        return next;
+      });
+      refreshHistorySoon.current();
+    });
+
+    return () => {
+      events.close();
+      setLastUpdateTime(null);
+    };
+  }, [userLocation, params, setLastUpdateTime]);
+
+  // Clear active cards exactly when the earliest one expires.
+  useEffect(() => {
+    const untils = Object.values(active).map(a => a.until);
+    if (!untils.length) return;
+    const timer = setTimeout(() => {
+      const now = Date.now();
+      setActive(prev => Object.fromEntries(Object.entries(prev).filter(([, a]) => a.until > now)));
+    }, Math.min(...untils) - Date.now());
+    return () => clearTimeout(timer);
+  }, [active]);
+
+  const toasts = (
+    <ToastContainer
+      position="bottom-right"
+      autoClose={30000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl
+      pauseOnFocusLoss
+      draggable={false}
+      pauseOnHover
+      theme="dark"
+      transition={Slide}
+    />
+  );
+
+  let content: React.ReactNode;
   if (!userLocation) {
-    return (
+    content = (
       <div className="flex flex-col items-center justify-center h-[85vh] gap-5 px-4 text-center">
         <div className="rounded-full bg-white/5 p-6">
           <MapPin className="h-12 w-12 text-red-400" />
@@ -110,53 +162,42 @@ export default function Home() {
         </Link>
       </div>
     );
-  }
-
-  if (!history) {
-    return (
+  } else if (!history) {
+    content = (
       <div className="flex flex-col items-center justify-center h-[85vh] gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
         <span className="text-lg text-gray-400">טוען התרעות...</span>
       </div>
     );
+  } else {
+    const totalComponents = 1 + locationsOfInterest.length;
+    content = (
+      <div className="w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 sm:min-h-[calc(100vh-60px)] sm:flex sm:items-center sm:justify-center">
+        <div className={`grid gap-3 w-full ${totalComponents === 1
+          ? 'grid-cols-1 max-w-lg mx-auto'
+          : totalComponents === 2
+            ? 'grid-cols-1 md:grid-cols-2'
+            : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+          }`}>
+          <CityAlerts
+            city={userLocation}
+            alerts={history[userLocation] ?? EMPTY}
+            active={active[userLocation]}
+            isPrimary
+          />
+          {locationsOfInterest.map((location) => (
+            <CityAlerts
+              key={location}
+              city={location}
+              alerts={history[location] ?? EMPTY}
+              active={active[location]}
+            />
+          ))}
+        </div>
+      </div>
+    );
   }
 
-  const totalComponents = 1 + locationsOfInterest.length;
-
-  return (
-    <div className="w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 sm:min-h-[calc(100vh-60px)] sm:flex sm:items-center sm:justify-center">
-      <div className={`grid gap-3 w-full ${totalComponents === 1
-        ? 'grid-cols-1 max-w-lg mx-auto'
-        : totalComponents === 2
-          ? 'grid-cols-1 md:grid-cols-2'
-          : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-        }`}>
-        <CityAlerts
-          city={userLocation}
-          alerts={history[userLocation] || []}
-          isPrimary
-        />
-        {locationsOfInterest.map((location, index) => (
-          <CityAlerts
-            key={index}
-            city={location}
-            alerts={history[location] || []}
-          />
-        ))}
-      </div>
-      <ToastContainer
-        position="bottom-right"
-        autoClose={30000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl
-        pauseOnFocusLoss
-        draggable={false}
-        pauseOnHover
-        theme="dark"
-        transition={Slide}
-      />
-    </div>
-  );
+  // Toasts stay outside the branches so the container never remounts (dropping toasts) when loading finishes.
+  return <>{content}{toasts}</>;
 }
