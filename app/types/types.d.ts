@@ -3,7 +3,7 @@ export interface History {
     title: string
     data: string
     category: number
-    rid: number
+    rid: string
 }
 
 export interface RealTimeAlert {

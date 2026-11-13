@@ -1,7 +1,8 @@
 import type { RealTimeAlert } from '@/app/types/types';
+import { record } from './history';
 
-// One server-side loop polls oref and fans out to every SSE subscriber.
-// Runs only while someone is subscribed; upstream load is 1 req/s regardless of user count.
+// One server-side loop polls oref, records history, and fans out to every SSE subscriber.
+// Always on (started from instrumentation.ts) so history has no gaps; upstream load is 1 req/s regardless of users.
 
 export type RealtimeMsg =
     | { type: 'alert'; alert: RealTimeAlert }
@@ -58,29 +59,32 @@ async function tick() {
         if (sig !== s.sig) {
             s.sig = sig;
             s.current = alert;
-            if (alert) broadcast({ type: 'alert', alert });
+            if (alert) {
+                broadcast({ type: 'alert', alert });
+                try { record(alert); } catch (error) { console.error('history write failed:', error); }
+            }
         }
     } catch (error) {
         if (!s.failing) console.error('realtime poll failed:', error);
         s.failing = true;
     }
     if (s.ticks++ % PING_EVERY === 0) broadcast({ type: 'ping', lastOk: s.lastOk });
-    if (s.subs.size) setTimeout(tick, TICK_MS);
-    else s.running = false;
+    setTimeout(tick, TICK_MS);
+}
+
+export function start() {
+    if (s.running) return;
+    s.running = true;
+    tick();
 }
 
 export function subscribe(fn: Listener): () => void {
     s.subs.add(fn);
-    if (!s.running) {
-        // Fresh start: forget the old alert so the first tick re-broadcasts one that is still active.
-        Object.assign(s, { running: true, sig: '', current: null, ticks: 0 });
-        tick();
-    }
     return () => { s.subs.delete(fn); };
 }
 
-/** Current state, only if the poller has fresh data (otherwise the first tick will deliver it). */
+/** Current state, only if the poller has fresh data (otherwise the next tick will deliver it). */
 export function snapshot() {
-    const fresh = s.running && Date.now() - s.lastOk < FRESH_MS;
+    const fresh = Date.now() - s.lastOk < FRESH_MS;
     return { fresh, current: s.current, lastOk: s.lastOk };
 }

@@ -9,21 +9,21 @@ The current version is in [`package.json`](package.json) and is shown at the bot
 ```bash
 npm install
 npm run dev     # http://localhost:3000
-npm test        # cache self-check (node:test)
+npm test        # history store self-check (node:test)
 npm run lint
 npm run build
 ```
 
 Docker: `docker compose up --build`
 
-| Env var      | Default                     | Purpose                         |
-| ------------ | --------------------------- | ------------------------------- |
-| `OREF_TOKEN` | oref's public web token     | Bearer token for history API    |
+| Env var    | Default | Purpose                                        |
+| ---------- | ------- | ---------------------------------------------- |
+| `DATA_DIR` | `data`  | Where `history.jsonl` is stored (Docker: volume `history` at `/app/data`) |
 
 ## How it works
 
-- **Realtime:** `lib/realtime.ts` runs a single server-side loop that polls oref `Alerts.json` once a second, only while clients are connected. It pushes alerts to browsers over Server-Sent Events at `/api/stream`, with a ping every ~5 s for the connection-lost warning.
-- **History:** `/api/history` fetches per city through a 1 s in-memory cache (`lib/cache.ts`) that shares in-flight requests. Only known city names are accepted, at most 30 per request.
+- **Realtime:** `lib/realtime.ts` runs a single server-side loop that polls oref `Alerts.json` once a second, always (started from `instrumentation.ts`). It pushes alerts to browsers over Server-Sent Events at `/api/stream`, with a ping every ~5 s for the connection-lost warning.
+- **History:** oref closed its history API to servers (Nov 2026), so `lib/history.ts` records every alert the realtime loop sees, one row per city, to `data/history.jsonl` (last 30 days). `/api/history` serves it from memory. Alerts that fire while the server is down are missing.
 
 ## Versioning & releases
 

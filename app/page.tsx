@@ -10,7 +10,7 @@ import { Settings, MapPin, Loader2 } from "lucide-react";
 
 const EMPTY: History[] = [];
 const HISTORY_POLL_MS = 10_000;  // realtime goes over SSE; history only needs a slow refresh
-const HISTORY_AFTER_ALERT_MS = 2000; // oref history lags realtime a bit
+const HISTORY_AFTER_ALERT_MS = 2000; // alert is recorded server-side in the same tick; small delay batches bursts
 const COOLDOWN = 2 * 60 * 1000;  // toast dedupe + how long a card stays "active"
 
 type ActiveAlerts = Record<string, { title: string; until: number }>;
